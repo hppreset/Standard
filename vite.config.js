@@ -1,11 +1,44 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { viteSingleFile } from 'vite-plugin-singlefile';
+import { fileURLToPath } from 'node:url';
 
-export default defineConfig({
+const stub = (f) => fileURLToPath(new URL(`./src/artifact/${f}`, import.meta.url));
+
+/**
+ * Zwei Build-Varianten:
+ *  - Standard (`npm run build`): installierbare PWA mit Service Worker → dist/
+ *  - `npm run build:artifact`: eine einzelne HTML-Datei für eingebettete Vorschauen
+ *    (kein Service Worker, Schriften über Google Fonts) → dist-artifact/
+ */
+export default defineConfig(({ mode }) => {
+  const artifact = mode === 'artifact';
+  return {
+  define: { __ARTIFACT__: JSON.stringify(artifact) },
+  ...(artifact && {
+    resolve: {
+      alias: {
+        'virtual:pwa-register/react': stub('pwa-register-stub.js'),
+        './fonts': stub('fonts-stub.js'),
+      },
+    },
+    build: { outDir: 'dist-artifact', assetsInlineLimit: 100_000_000, cssCodeSplit: false },
+  }),
   plugins: [
     react(),
-    VitePWA({
+    artifact && viteSingleFile({ removeViteModuleLoader: true }),
+    artifact && {
+      name: 'artifact-html',
+      transformIndexHtml: (html) =>
+        html
+          .replace(/<link rel="(icon|apple-touch-icon)"[^>]*>\s*/g, '')
+          .replace(
+            '</title>',
+            '</title>\n    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" />',
+          ),
+    },
+    !artifact && VitePWA({
       // Neue Versionen werden erst nach Bestätigung aktiviert (kein Reload mitten in der Arbeit).
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
@@ -30,8 +63,8 @@ export default defineConfig({
           { src: 'maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
         shortcuts: [
-          { name: 'Timer starten', short_name: 'Start', url: '/?action=start#/timesheet', icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }] },
-          { name: 'Auswertung', short_name: 'Auswertung', url: '/#/reports', icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'Timer starten', short_name: 'Start', url: '/?action=start#timesheet', icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'Auswertung', short_name: 'Auswertung', url: '/#reports', icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }] },
         ],
       },
       workbox: {
@@ -43,5 +76,6 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
-  ],
+  ].filter(Boolean),
+  };
 });

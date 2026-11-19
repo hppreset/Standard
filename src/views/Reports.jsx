@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Check, Copy, Download, X } from 'lucide-react';
 import { Dot } from '../components/ProjectPicker';
 import { useNow } from '../hooks/useNow';
-import { buildCsv, downloadFile } from '../lib/csv';
+import { buildCsv, saveFile } from '../lib/csv';
 import { entryDuration, inRange, summarize, withRunning } from '../lib/stats';
 import {
   HOUR, addDays, formatDuration, formatEuro, formatHours, startOfDay, startOfMonth, startOfNextMonth,
@@ -107,10 +107,26 @@ export default function Reports({ state, projectsById }) {
   const sum = useMemo(() => summarize(periodEntries, projectsById, now), [periodEntries, projectsById, now]);
   const share = sum.total ? sum.billable / sum.total : 0;
 
-  const exportCsv = () => {
+  const [fallback, setFallback] = useState(null); // CSV-Text, falls Download hier nicht möglich
+  const [copied, setCopied] = useState(false);
+
+  const exportCsv = async () => {
     const finished = periodEntries.filter((e) => e.end);
     const name = period === 'all' ? 'gesamt' : `${toDateInput(from)}_bis_${toDateInput(to - 1)}`;
-    downloadFile(`zeiterfassung_${name}.csv`, buildCsv(finished, projectsById));
+    const csv = buildCsv(finished, projectsById);
+    const result = await saveFile(`zeiterfassung_${name}.csv`, csv);
+    if (result === 'unavailable') {
+      setCopied(false);
+      setFallback(csv.replace(/^\uFEFF/, ''));
+    }
+  };
+
+  const copyCsv = (e) => {
+    const area = e.currentTarget.closest('[data-csv]')?.querySelector('textarea');
+    navigator.clipboard?.writeText(fallback).then(
+      () => setCopied(true),
+      () => area?.select(),
+    ) ?? area?.select();
   };
 
   const exportCount = periodEntries.filter((e) => e.end).length;
@@ -216,6 +232,20 @@ export default function Reports({ state, projectsById }) {
         })}
         </div>
       </section>
+      {fallback && (
+        <section data-csv className="card space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <p className="mr-auto text-sm font-medium">Download in dieser Ansicht nicht möglich – CSV zum Kopieren</p>
+            <button type="button" onClick={copyCsv} className="btn-outline h-7 px-2.5 text-xs">
+              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Kopiert' : 'Kopieren'}
+            </button>
+            <button type="button" onClick={() => setFallback(null)} className="icon-btn h-7 w-7" title="Schließen">
+              <X size={14} />
+            </button>
+          </div>
+          <textarea readOnly value={fallback} rows={8} className="field h-auto w-full resize-y py-2 font-mono text-xs" onFocus={(e) => e.target.select()} />
+        </section>
+      )}
       <p className="text-xs text-subtle">
         CSV: Semikolon-getrennt, Dezimalkomma, UTF-8 – öffnet direkt in Excel/Numbers. Laufende Timer werden nicht exportiert.
       </p>

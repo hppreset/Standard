@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FolderPlus, Pencil, Play, Plus, Trash2, X } from 'lucide-react';
 import { Dot } from '../components/ProjectPicker';
+import { confirmDialog } from '../components/ConfirmDialog';
 import { summarize, withRunning } from '../lib/stats';
 import { HOUR, formatEuro, formatHours } from '../lib/time';
 
@@ -124,12 +125,17 @@ export default function Projects({ state, actions, projectsById }) {
     return new Map(s.byProject.map((r) => [r.project?.id ?? null, r]));
   }, [entries, timer, projectsById]);
 
-  const remove = (p) => {
+  const remove = async (p) => {
     const count = entries.filter((e) => e.projectId === p.id).length;
-    const msg = count
-      ? `„${p.name}“ löschen? ${count} Zeiteinträge bleiben erhalten, aber ohne Projekt.`
-      : `„${p.name}“ löschen?`;
-    if (window.confirm(msg)) actions.deleteProject(p.id);
+    const ok = await confirmDialog({
+      title: `„${p.name}“ löschen?`,
+      message: count
+        ? `${count} Zeiteinträge bleiben erhalten, sind danach aber keinem Projekt mehr zugeordnet.`
+        : 'Das Projekt hat noch keine Zeiteinträge.',
+      confirmLabel: 'Projekt löschen',
+      danger: true,
+    });
+    if (ok) actions.deleteProject(p.id);
   };
 
   return (

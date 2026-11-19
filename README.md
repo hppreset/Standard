@@ -39,6 +39,13 @@ Takt ist als PWA installierbar (Desktop, Android, iOS) und funktioniert vollstä
 ein statisches `dist/`, das sich z. B. auf Netlify, Vercel, Cloudflare Pages oder GitHub Pages hosten lässt.
 Lokal testen: `npm run build && npm run preview`. Im Dev-Server (`npm run dev`) ist der Service Worker absichtlich deaktiviert.
 
+## Einzeldatei-Version (Vorschau / Artifact)
+
+`npm run build:artifact` erzeugt `dist-artifact/takt.html`: die komplette App als eine HTML-Datei,
+ohne Service Worker und mit Schriften über Google Fonts. Sie ist für eingebettete Vorschauen gedacht,
+etwa als claude.ai-Artifact. Dort läuft der CSV-Export über die `downloads`-Fähigkeit des Viewers;
+ist sie nicht verfügbar, erscheint der CSV-Text zum Kopieren.
+
 ## Daten & Erweiterung auf Supabase
 
 Alle Daten liegen in `localStorage` (`takt:data:v1`). Beim ersten Start werden 3 Beispielprojekte und

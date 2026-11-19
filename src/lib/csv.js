@@ -41,6 +41,26 @@ export function buildCsv(entries, projectsById) {
   return '﻿' + lines.join('\r\n');
 }
 
+/**
+ * Datei anbieten. In der eingebetteten Vorschau (Artifact) läuft das über die
+ * `downloads`-Fähigkeit des Viewers, sonst über einen normalen Download-Link.
+ * Ergebnis: 'saved' | 'declined' | 'unavailable'.
+ */
+export async function saveFile(filename, content) {
+  if (__ARTIFACT__) {
+    const downloads = await window.claude?.use?.('downloads');
+    if (!downloads) return 'unavailable';
+    try {
+      await downloads.save({ filename, data: content });
+      return 'saved';
+    } catch (e) {
+      return e?.code === 'declined' ? 'declined' : 'unavailable';
+    }
+  }
+  downloadFile(filename, content);
+  return 'saved';
+}
+
 export function downloadFile(filename, content, type = 'text/csv;charset=utf-8') {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const a = document.createElement('a');

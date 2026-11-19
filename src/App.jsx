@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BarChart3, Download, FolderKanban, ListTodo, Moon, RotateCcw, Sun } from 'lucide-react';
 import TopBar from './components/TopBar';
 import PwaStatus from './components/PwaStatus';
+import { ConfirmHost, confirmDialog } from './components/ConfirmDialog';
 import { useInstallPrompt } from './hooks/usePwa';
 import Timesheet from './views/Timesheet';
 import Projects from './views/Projects';
@@ -15,8 +16,9 @@ const VIEWS = [
   { id: 'reports', label: 'Auswertung', icon: BarChart3 },
 ];
 
+// Einfache Hashes (#reports) – `#/…` wird zur Abwärtskompatibilität ebenfalls erkannt.
 const viewFromHash = () => {
-  const h = window.location.hash.replace('#/', '');
+  const h = window.location.hash.replace(/^#\/?/, '');
   return VIEWS.some((v) => v.id === h) ? h : 'timesheet';
 };
 
@@ -40,7 +42,7 @@ export default function App() {
   const [view, setView] = useState(viewFromHash);
   const { mode: installMode, install } = useInstallPrompt();
   const [iosHint, setIosHint] = useState(false);
-  const canInstall = installMode === 'prompt' || installMode === 'ios';
+  const canInstall = !__ARTIFACT__ && (installMode === 'prompt' || installMode === 'ios');
   const onInstall = () => (installMode === 'ios' ? setIosHint(true) : install());
 
   // App-Shortcut „Timer starten“ (Manifest: /?action=start)
@@ -62,19 +64,26 @@ export default function App() {
   }, []);
 
   const go = (id) => {
-    window.location.hash = `/${id}`;
+    window.location.hash = id;
     setView(id);
   };
 
-  const reset = () => {
-    if (window.confirm('Alle Daten löschen und Beispieldaten neu laden?')) actions.resetDemo();
+  const reset = async () => {
+    const ok = await confirmDialog({
+      title: 'Demo zurücksetzen?',
+      message: 'Alle Projekte und Zeiteinträge werden gelöscht und durch die Beispieldaten ersetzt.',
+      confirmLabel: 'Zurücksetzen',
+      danger: true,
+    });
+    if (ok) actions.resetDemo();
   };
 
   const ThemeIcon = theme === 'dark' ? Sun : Moon;
   const props = { state, actions, projectsById };
 
   return (
-    <div className="safe-top flex min-h-screen">
+    <div className="safe-pad-top flex min-h-screen">
+      <ConfirmHost />
       {/* Abdeckung der iOS-Statusleiste, damit gescrollte Inhalte nicht durchscheinen */}
       <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-50 bg-bg" />
       <PwaStatus showIosHint={iosHint} onCloseIosHint={() => setIosHint(false)} />

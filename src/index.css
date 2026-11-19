@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme='dark'] {
+  --bg: 15 17 21;        /* #0F1115 */
+  --card: 22 25 32;      /* #161920 */
+  --elev: 30 34 44;      /* Hover / Inputs */
+  --line: 38 42 54;      /* #262A36 */
+  --fg: 230 232 239;
+  --muted: 142 147 164;
+  --subtle: 92 97 114;
+  --accent: 129 112 245; /* Indigo/Violett */
+  --accent-fg: 255 255 255;
+  --danger: 244 99 120;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: 246 246 249;
+  --card: 255 255 255;
+  --elev: 240 241 245;
+  --line: 227 229 236;
+  --fg: 20 22 28;
+  --muted: 98 103 120;
+  --subtle: 150 155 170;
+  --accent: 99 82 230;
+  --accent-fg: 255 255 255;
+  --danger: 220 53 85;
+  color-scheme: light;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  ::selection {
+    background: rgb(var(--accent) / 0.3);
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer utilities {
+  /* Feste Ziffernbreite: nichts springt, wenn Sekunden laufen. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 h-8 text-sm font-medium transition-colors
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-accent-fg hover:bg-accent/90;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:text-fg hover:bg-elev;
+  }
+  .btn-outline {
+    @apply btn border border-line text-fg hover:bg-elev;
+  }
+  .icon-btn {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors
+      hover:bg-elev hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60;
+  }
+  .card {
+    @apply rounded-xl border border-line bg-card;
+  }
+  .field {
+    @apply h-9 w-full rounded-md border border-line bg-bg px-3 text-sm text-fg placeholder:text-subtle
+      focus:outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-muted;
+  }
+  /* Inline-editierbare Felder: sehen aus wie Text, werden beim Hover zu Inputs. */
+  .inline-field {
+    @apply rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm text-fg placeholder:text-subtle transition-colors
+      hover:border-line focus:border-accent/60 focus:bg-bg focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+}

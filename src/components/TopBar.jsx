@@ -42,7 +42,7 @@ export default function TopBar({ timer, projects, projectsById, actions }) {
   };
 
   return (
-    <div className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
+    <div className="sticky top-[env(safe-area-inset-top)] z-40 border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3 md:flex-nowrap md:gap-3 md:px-8">
         <input
           ref={inputRef}

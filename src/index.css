@@ -37,6 +37,12 @@
     @apply bg-bg text-fg font-sans antialiased;
     font-feature-settings: 'cv11', 'ss01';
   }
+  /* Installierte App (iOS „black-translucent“): Inhalte nicht unter Notch/Statusleiste. */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   ::selection {
     background: rgb(var(--accent) / 0.3);
   }
@@ -51,6 +57,16 @@
 }
 
 @layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  /* Kein Pull-to-Refresh / Gummiband-Effekt in der installierten App. */
+  @media (display-mode: standalone) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
   /* Feste Ziffernbreite: nichts springt, wenn Sekunden laufen. */
   .tnum {
     font-variant-numeric: tabular-nums;

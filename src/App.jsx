@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-import { BarChart3, FolderKanban, ListTodo, Moon, RotateCcw, Sun } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BarChart3, Download, FolderKanban, ListTodo, Moon, RotateCcw, Sun } from 'lucide-react';
 import TopBar from './components/TopBar';
+import PwaStatus from './components/PwaStatus';
+import { useInstallPrompt } from './hooks/usePwa';
 import Timesheet from './views/Timesheet';
 import Projects from './views/Projects';
 import Reports from './views/Reports';
@@ -36,6 +38,22 @@ export default function App() {
   const { state, actions, projectsById } = useTracker();
   const [theme, toggleTheme] = useTheme();
   const [view, setView] = useState(viewFromHash);
+  const { mode: installMode, install } = useInstallPrompt();
+  const [iosHint, setIosHint] = useState(false);
+  const canInstall = installMode === 'prompt' || installMode === 'ios';
+  const onInstall = () => (installMode === 'ios' ? setIosHint(true) : install());
+
+  // App-Shortcut „Timer starten“ (Manifest: /?action=start)
+  const handledAction = useRef(false);
+  useEffect(() => {
+    if (handledAction.current) return;
+    handledAction.current = true;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'start') {
+      if (!state.timer.start) actions.startTimer();
+      window.history.replaceState(null, '', `/${window.location.hash}`);
+    }
+  }, [actions, state.timer.start]);
 
   useEffect(() => {
     const onHash = () => setView(viewFromHash());
@@ -56,8 +74,11 @@ export default function App() {
   const props = { state, actions, projectsById };
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-line px-3 py-4 md:flex">
+    <div className="safe-top flex min-h-screen">
+      {/* Abdeckung der iOS-Statusleiste, damit gescrollte Inhalte nicht durchscheinen */}
+      <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-50 bg-bg" />
+      <PwaStatus showIosHint={iosHint} onCloseIosHint={() => setIosHint(false)} />
+      <aside className="sticky top-[env(safe-area-inset-top)] hidden h-screen w-56 shrink-0 flex-col border-r border-line px-3 py-4 md:flex">
         <div className="px-2 pb-6">
           <Logo />
         </div>
@@ -81,6 +102,11 @@ export default function App() {
             <kbd className="rounded border border-line px-1 font-mono">S</kbd> Start/Stopp ·{' '}
             <kbd className="rounded border border-line px-1 font-mono">N</kbd> Neue Aufgabe
           </p>
+          {canInstall && (
+            <button type="button" onClick={onInstall} className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-sm font-medium text-accent hover:bg-accent/10">
+              <Download size={16} /> App installieren
+            </button>
+          )}
           <button type="button" onClick={toggleTheme} className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-sm text-muted hover:bg-elev/60 hover:text-fg">
             <ThemeIcon size={16} /> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           </button>
@@ -93,9 +119,16 @@ export default function App() {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between border-b border-line px-4 py-2.5 md:hidden">
           <Logo />
-          <button type="button" onClick={toggleTheme} className="icon-btn" title="Theme wechseln">
-            <ThemeIcon size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            {canInstall && (
+              <button type="button" onClick={onInstall} className="btn-ghost h-8 px-2 text-accent" title="App installieren">
+                <Download size={15} /> Installieren
+              </button>
+            )}
+            <button type="button" onClick={toggleTheme} className="icon-btn" title="Theme wechseln">
+              <ThemeIcon size={16} />
+            </button>
+          </div>
         </div>
 
         <TopBar timer={state.timer} projects={state.projects} projectsById={projectsById} actions={actions} />
